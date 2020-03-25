@@ -1,15 +1,8 @@
 import distance from 'levenshtein-edit-distance';
-import math, { Matrix } from 'mathjs';
+import { all, create, Matrix } from 'mathjs';
 
-const MATCH_THRESHOLD = 0.8;
-
-export class DomainMatrix {
-    constructor(
-        public name: string,
-        public concepts: Concept[],
-        public domain: Matrix
-    ) {}
-}
+export const math = create(all, {});
+export const MATCH_THRESHOLD = 0.8;
 
 export interface Match {
     name: string;
@@ -21,13 +14,11 @@ export class Concept {
         // add name to synonyms and filter out duplicates
         this.synonyms = [...new Set(synonyms ? [name, ...synonyms] : [name])];
     }
-
     BestSuggestion(other: string, threshold: number = MATCH_THRESHOLD): Match {
         return this.Suggestions(other, threshold).reduce((a, b) =>
             a.similarity > b.similarity ? a : b
         );
     }
-
     Suggestions(other: string, threshold: number = MATCH_THRESHOLD): Match[] {
         return this.synonyms
             .map(s => {
@@ -36,7 +27,6 @@ export class Concept {
             .filter(m => m.similarity >= threshold)
             .sort((a, b) => a.similarity - b.similarity);
     }
-
     static Similarity(a: string, b: string) {
         return 1 - distance(a, b, true) / math.max(a.length, b.length);
     }
