@@ -24,6 +24,16 @@ test('gives correct suggestion', () => {
     expect(boom.BestSuggestion('fo', 0).name).toBe('foo');
 });
 
+test('gives suggestions in correct order', () => {
+    let foo = new Concept('foo', ['goo', 'dang', 'gosh']);
+    expect(foo.Suggestions('foa', 0).map(s => s.name)).toEqual([
+        'foo',
+        'goo',
+        'gosh',
+        'dang',
+    ]);
+});
+
 test('gives correct distance', () => {
     expect(bif.BestSuggestion('baf', 0).similarity).toBeCloseTo(2 / 3);
 });

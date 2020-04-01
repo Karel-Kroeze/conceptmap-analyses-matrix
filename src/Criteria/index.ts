@@ -1,2 +1,2 @@
-export * from './Criteria';
-export * from './ICriterium';
+export * from './ICriterion';
+export * from './NodeSuggestion';

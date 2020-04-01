@@ -1,3 +1,4 @@
-export * from './ConceptMapAnalyzer';
+export * from './Analyzer';
+export * from './Concept';
+export * from './Domain';
 export * from './Criteria/index';
-export * from './CytoGraph/index';
