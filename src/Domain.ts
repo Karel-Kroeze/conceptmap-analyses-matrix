@@ -6,6 +6,8 @@ import IConceptMap = ut.tools.cm2.ConceptMapJSON;
 export class Domain {
     private cm: IConceptMap | undefined;
 
+    //
+
     constructor(
         public name: string,
         public concepts: Concept[],
