@@ -1,5 +1,6 @@
 import { Concept, MATCH_THRESHOLD } from './Concept';
-import { Matrix, matrix } from './Helpers/math';
+import { matrix } from './Helpers/math';
+import { Matrix } from 'mathjs';
 import IConceptMap = ut.tools.cm2.ConceptMapJSON;
 
 export class Domain {

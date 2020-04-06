@@ -1,59 +1,44 @@
 import { Domain } from '../Domain';
+import { Matrix } from 'mathjs';
+import { ICriteriumResult, IMissingNodeHint } from './ICriterion';
 import {
     dotMultiply,
     index,
-    lusolve,
     sum,
     subset,
     max,
+    vector,
+    missing,
+    presentDomainMatrix,
+    presentIndices,
+    missingIndices,
     ensureMatrix,
-} from '../Helpers/math';
-import { Matrix } from 'mathjs';
-import { ICriteriumResult, IMissingNodeHint } from './ICriterion';
-import { which } from '../Helpers/which';
-import { vector } from '../Helpers/vector';
+    solve,
+} from '../Helpers';
 
 export function NodeSuggestion(
     reference: Domain,
     student: Matrix,
     naieve: boolean = false
 ): ICriteriumResult | null {
-    let present: number[] = (<number[]>student.diagonal().valueOf()).map(
-        v => +!!v
-    );
-    let presentIndices = which(present);
-    let missing = present.map(v => +!v);
-    let missingIndices = which(missing);
     let weights: number[] = [];
     let concepts = vector<number>(reference.domain.diagonal());
 
     if (naieve) {
-        weights = <number[]>dotMultiply(concepts, missing).valueOf();
+        weights = <number[]>dotMultiply(concepts, missing(student)).valueOf();
     } else {
-        let X = ensureMatrix(
-            reference.domain.subset(index(presentIndices, presentIndices))
-        );
-        for (let i of presentIndices) weights[i] = 0;
-        for (let i of missingIndices) {
+        let X = presentDomainMatrix(student, reference.domain);
+        for (let i of presentIndices(student)) weights[i] = 0;
+        for (let i of missingIndices(student)) {
             let y = ensureMatrix(
-                reference.domain.subset(index(presentIndices, [i]))
+                reference.domain.subset(index(presentIndices(student), [i]))
             );
-            // console.log({
-            //     reference: reference.domain,
-            //     student,
-            //     present,
-            //     presentIndices,
-            //     missing,
-            //     missingIndices,
-            //     X,
-            //     y,
-            // });
-            let lu = <Matrix>lusolve(X, y);
+            let lu = solve(X, y);
             weights[i] = sum(
                 ...(<number[]>(
                     dotMultiply(
-                        subset(concepts, index(presentIndices)),
-                        vector(lu)
+                        subset(concepts, index(presentIndices(student))),
+                        lu
                     )
                 ))
             );

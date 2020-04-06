@@ -1,7 +1,10 @@
 import { Matrix } from 'mathjs';
-import { lusolve, size } from './math';
+import { lusolve } from './math';
 import { vector } from './vector';
 
-export function solve(A: Matrix, b: number[]): number[] {
+export function solve(
+    A: Matrix | number[][],
+    b: Matrix | number[][] | number[]
+): number[] {
     return vector(<any>lusolve(A, b));
 }

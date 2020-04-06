@@ -3,6 +3,12 @@ import { matrix, multiply, dotMultiply, index } from '../../src/Helpers/math';
 import { Domain } from '../../src/Domain';
 import { Concept } from '../../src/Concept';
 import IConceptMap = ut.tools.cm2.ConceptMapJSON;
+import {
+    present,
+    missing,
+    presentIndices,
+    missingIndices,
+} from '../../src/Helpers';
 
 let testMatrix = matrix([
     [1, 2],
@@ -64,6 +70,12 @@ let cm = {
 };
 let student = domain.createStudentMatrix(cm);
 test('it suggests the correct node', () => {
+    // console.log({
+    //     presentIndices: presentIndices(student),
+    //     present: present(student),
+    //     missingIndices: missingIndices(student),
+    //     missing: missing(student),
+    // });
     let suggestion = NodeSuggestion(domain, student, true);
     expect(suggestion.hint.element_type).toBe('missing_node');
     expect(suggestion.hint.subject.name).toBe('bif');
@@ -75,6 +87,12 @@ let cm2 = {
 };
 let student2 = domain.createStudentMatrix(cm2);
 test('it suggest the correct node [2]', () => {
+    // console.log({
+    //     presentIndices: presentIndices(student2),
+    //     present: present(student2),
+    //     missingIndices: missingIndices(student2),
+    //     missing: missing(student2),
+    // });
     let suggestion = NodeSuggestion(domain, student2);
     expect(suggestion.hint.element_type).toBe('missing_node');
     expect(suggestion.hint.subject.name).toBe('baf');
@@ -88,6 +106,12 @@ let cm3 = {
 };
 let student3 = domain.createStudentMatrix(cm3);
 test('it suggest the correct node [3]', () => {
+    // console.log({
+    //     presentIndices: presentIndices(student3),
+    //     present: present(student3),
+    //     missingIndices: missingIndices(student3),
+    //     missing: missing(student3),
+    // });
     let suggestion = NodeSuggestion(domain, student3);
     expect(suggestion.hint.element_type).toBe('missing_node');
     expect(suggestion.hint.subject.name).toBe('boom');

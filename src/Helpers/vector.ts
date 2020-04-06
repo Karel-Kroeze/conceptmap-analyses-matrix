@@ -1,8 +1,9 @@
 import { Matrix } from 'mathjs';
 import { flatten } from 'lodash';
+import { isMatrix } from '.';
 
-function isMatrix(input: any): input is Matrix {
-    return input && input.constructor.prototype.isMatrix === true;
+export function isVector(input: any): input is number[] {
+    return Array.isArray(input) && !input.some(v => typeof v !== 'number');
 }
 
 export function vector<T>(input: T[]): T[];
