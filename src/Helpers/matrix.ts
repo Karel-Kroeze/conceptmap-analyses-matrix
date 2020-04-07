@@ -6,7 +6,7 @@ export function isMatrix(input: any): input is Matrix {
 }
 
 export function ensureMatrix(
-    input: number | number[] | number[][] | Matrix
+    input: number[] | number[][] | Matrix | number
 ): Matrix {
     if (typeof input === 'number') {
         return matrix([[input]]);

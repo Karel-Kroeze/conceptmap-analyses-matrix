@@ -1,5 +1,5 @@
 import { Domain } from '../Domain';
-import { matrix, dotMultiply, ensureMatrix } from '../Helpers';
+import { matrix, dotMultiply, ensureMatrix, max } from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 import { Matrix } from 'mathjs';
 
@@ -27,6 +27,23 @@ export function EdgeSuggestion(
     let weights: Matrix = matrix();
 
     if (naive) {
-        weights = ensureMatrix(dotMultiply(reference.domain, student));
+        weights = ensureMatrix(
+            dotMultiply(reference.domain, student) as Matrix
+        );
+        console.log({ max: max(weights) });
     }
+
+    return {
+        id: 'test',
+        criterion: 'edge-suggestion',
+        weight: 1,
+        priority: 1,
+        hint: {
+            element_type: 'missing_edge',
+            messages: [`maybe you should add some edges?`],
+            source: 'asd',
+            target: 'asd',
+            subject: {},
+        },
+    };
 }
