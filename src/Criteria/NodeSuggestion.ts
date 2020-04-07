@@ -8,10 +8,10 @@ import {
     subset,
     max,
     vector,
-    missing,
+    missingConcepts,
     presentDomainMatrix,
     presentIndices,
-    missingIndices,
+    missingConceptIndices,
     ensureMatrix,
     solve,
 } from '../Helpers';
@@ -25,11 +25,13 @@ export function NodeSuggestion(
     let concepts = vector<number>(reference.domain.diagonal());
 
     if (naive) {
-        weights = <number[]>dotMultiply(concepts, missing(student)).valueOf();
+        weights = <number[]>(
+            dotMultiply(concepts, missingConcepts(student)).valueOf()
+        );
     } else {
         let X = presentDomainMatrix(student, reference.domain);
         for (let i of presentIndices(student)) weights[i] = 0;
-        for (let i of missingIndices(student)) {
+        for (let i of missingConceptIndices(student)) {
             let y = ensureMatrix(
                 reference.domain.subset(index(presentIndices(student), [i]))
             );

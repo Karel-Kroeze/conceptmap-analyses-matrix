@@ -1,5 +1,11 @@
 import { Domain } from '../Domain';
-import { matrix, dotMultiply, ensureMatrix, max } from '../Helpers';
+import {
+    matrix,
+    dotMultiply,
+    ensureMatrix,
+    max,
+    missingConcepts,
+} from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 import { Matrix } from 'mathjs';
 
@@ -24,11 +30,11 @@ export function EdgeSuggestion(
     student: Matrix,
     naive: boolean = false
 ): ICriteriumResult<IMissingEdgeHint> | null {
-    let weights: Matrix = matrix();
+    let weights: Matrix = matrix().resize(reference.domain.size(), 0);
 
     if (naive) {
         weights = ensureMatrix(
-            dotMultiply(reference.domain, student) as Matrix
+            dotMultiply(reference.domain, missingConcepts(student)) as Matrix
         );
         console.log({ max: max(weights) });
     }

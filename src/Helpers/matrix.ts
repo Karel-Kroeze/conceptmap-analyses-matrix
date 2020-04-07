@@ -23,26 +23,26 @@ export function ensureMatrix(
 /**
  * gets a vector of 0/1 values, where present concepts are set to 1.
  */
-export function present(student: Matrix): number[] {
+export function presentConcepts(student: Matrix): number[] {
     return (<number[]>student.diagonal().valueOf()).map(v => +!!v);
 }
 
 /**
  * export functions a vector of 0/1 values, where missing concepts are set to 1.
  */
-export function missing(student: Matrix): number[] {
-    return present(student).map(v => 1 - v);
+export function missingConcepts(student: Matrix): number[] {
+    return presentConcepts(student).map(v => 1 - v);
 }
 
 export function presentIndices(student: Matrix): number[] {
-    return which(present(student));
+    return which(presentConcepts(student));
 }
 
-export function missingIndices(student: Matrix): number[] {
-    return which(missing(student));
+export function missingConceptIndices(student: Matrix): number[] {
+    return which(missingConcepts(student));
 }
 
-export function presentMatrix(student: Matrix): Matrix {
+export function presentConceptMatrix(student: Matrix): Matrix {
     let present = presentIndices(student);
     return ensureMatrix(student.subset(index(present, present)));
 }
