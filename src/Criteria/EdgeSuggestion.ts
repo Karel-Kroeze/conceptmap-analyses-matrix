@@ -1,6 +1,7 @@
 import { Domain } from '../Domain';
-import { Matrix } from 'mathjs';
+import { matrix, dotMultiply, ensureMatrix } from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
+import { Matrix } from 'mathjs';
 
 /**
  * If possible, returns a suggestion for the next most informative edge.
@@ -21,9 +22,11 @@ import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 export function EdgeSuggestion(
     reference: Domain,
     student: Matrix,
-    naieve: boolean = false
-): ICriteriumResult | null {
-    return null;
+    naive: boolean = false
+): ICriteriumResult<IMissingEdgeHint> | null {
+    let weights: Matrix = matrix();
 
-    // whateer
+    if (naive) {
+        weights = ensureMatrix(dotMultiply(reference.domain, student));
+    }
 }

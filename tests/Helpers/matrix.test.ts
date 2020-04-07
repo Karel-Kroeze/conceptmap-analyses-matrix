@@ -1,5 +1,5 @@
 import { typeOf } from 'mathjs';
-import { matrix, ensureMatrix, which } from '../../src/Helpers';
+import { matrix, ensureMatrix } from '../../src/Helpers';
 
 let scalar = 1;
 let vector = [1, 2];
@@ -29,14 +29,4 @@ test('ensureMatrix scalar', () => {
 test('ensureMatrix scalar', () => {
     expect(typeOf(ensureMatrix(scalar))).toBe('Matrix');
     expect(ensureMatrix(scalar).size()).toEqual([1, 1]);
-});
-test('it returns the correct indeces', () => {
-    let input = [true, false, false, true];
-    let output = which(input);
-    expect(output).toEqual([0, 3]);
-});
-test('it handles numeric inputs', () => {
-    let input = [1, 0, 0];
-    let output = which(input);
-    expect(output).toEqual([0]);
 });

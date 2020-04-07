@@ -19,12 +19,12 @@ import {
 export function NodeSuggestion(
     reference: Domain,
     student: Matrix,
-    naieve: boolean = false
-): ICriteriumResult | null {
+    naive: boolean = false
+): ICriteriumResult<IMissingNodeHint> | null {
     let weights: number[] = [];
     let concepts = vector<number>(reference.domain.diagonal());
 
-    if (naieve) {
+    if (naive) {
         weights = <number[]>dotMultiply(concepts, missing(student)).valueOf();
     } else {
         let X = presentDomainMatrix(student, reference.domain);
@@ -47,21 +47,21 @@ export function NodeSuggestion(
 
     let suggestedNode = weights.indexOf(max(weights));
     let subject = reference.concepts[suggestedNode];
-    let hint: IMissingNodeHint = {
-        element_type: 'missing_node',
-        subject,
-        messages: [`Maybe you should add ${subject.name}`],
-    };
 
-    let result: ICriteriumResult = {
+    return {
         id: `missing-node-${subject.name}`,
         criterion: `missing-node`,
-        success: false,
         weight: 1,
         priority: 2,
-        message: hint.messages[0],
-        hint: hint,
+        hint: {
+            element_type: 'missing_node',
+            subject,
+            messages: [`Maybe you should add ${subject.name}`],
+        },
+        content: {
+            weights,
+            student,
+            reference,
+        },
     };
-
-    return result;
 }

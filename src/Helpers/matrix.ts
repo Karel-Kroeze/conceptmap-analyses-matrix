@@ -1,9 +1,5 @@
 import { Matrix, typeOf } from 'mathjs';
-import { matrix, isVector, index } from '.';
-
-export function which(array: any[]): number[] {
-    return array.reduce((acc, val, i) => (!!val ? [...acc, i] : acc), []);
-}
+import { matrix, isVector, index, which } from '.';
 
 export function isMatrix(input: any): input is Matrix {
     return typeOf(input) === 'Matrix';
