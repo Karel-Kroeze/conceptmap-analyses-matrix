@@ -45,11 +45,20 @@ let cm2: IConceptMap = {
     ],
     edges: [{ from: 1, to: 2, label: 'bif -> boom' }],
 };
-const student2 = domain.createStudentMatrix(cm2);
-test('creates correct student matrix', () => {
+const student2 = domain.createStudentMatrix(cm2, true);
+test('creates correct directed student matrix', () => {
     expect(student2).toBeDefined();
     expect(student2.size()).toEqual([3, 3]);
     expect(student2.get([0, 0])).toBe(1);
     expect(student2.get([0, 2])).toBe(1);
     expect(student2.get([2, 0])).toBe(0);
+});
+
+const student3 = domain.createStudentMatrix(cm2, false);
+test('creates correct undirected student matrix', () => {
+    expect(student3).toBeDefined();
+    expect(student3.size()).toEqual([3, 3]);
+    expect(student3.get([0, 0])).toBe(1);
+    expect(student3.get([0, 2])).toBe(1);
+    expect(student3.get([2, 0])).toBe(1);
 });

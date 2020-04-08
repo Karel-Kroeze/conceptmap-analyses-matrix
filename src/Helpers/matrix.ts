@@ -1,5 +1,5 @@
 import { Matrix, typeOf } from 'mathjs';
-import { matrix, isVector, index, which } from '.';
+import { matrix, isVector, index, which, missing } from '.';
 
 export function isMatrix(input: any): input is Matrix {
     return typeOf(input) === 'Matrix';
@@ -31,7 +31,7 @@ export function presentConcepts(student: Matrix): number[] {
  * export functions a vector of 0/1 values, where missing concepts are set to 1.
  */
 export function missingConcepts(student: Matrix): number[] {
-    return presentConcepts(student).map(v => 1 - v);
+    return missing(presentConcepts(student));
 }
 
 export function presentIndices(student: Matrix): number[] {

@@ -5,9 +5,14 @@ import {
     ensureMatrix,
     max,
     missingConcepts,
+    sum,
+    presentConceptMatrix,
+    missing,
+    which,
 } from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 import { Matrix } from 'mathjs';
+import { SourceMap } from 'module';
 
 /**
  * If possible, returns a suggestion for the next most informative edge.
@@ -31,12 +36,28 @@ export function EdgeSuggestion(
     naive: boolean = false
 ): ICriteriumResult<IMissingEdgeHint> | null {
     let weights: Matrix = matrix().resize(reference.domain.size(), 0);
-
     if (naive) {
         weights = ensureMatrix(
             dotMultiply(reference.domain, missingConcepts(student)) as Matrix
         );
-        console.log({ max: max(weights) });
+    }
+
+    // check that we have enough concepts.
+    let concepts = student.diagonal() as number[];
+    if (sum(concepts) < 2) {
+        console.warn({ message: 'not enough concepts', student });
+        return null;
+    }
+
+    let presentMatrix = presentConceptMatrix(student);
+    // console.dir({
+    //     presentMatrix: presentMatrix.valueOf(),
+    //     student: student.valueOf(),
+    //     missing: which(missing(presentMatrix)),
+    // });
+    if (which(missing(presentMatrix)).length == 0) {
+        console.warn({ message: 'concept map is saturated', student });
+        return null;
     }
 
     return {

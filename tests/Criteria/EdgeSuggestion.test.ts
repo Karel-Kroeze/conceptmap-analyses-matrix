@@ -23,11 +23,14 @@ test('it gracefully fails for concept maps with too few concepts', () => {
 });
 test('it gracefully fails for concept maps that are saturated', () => {
     let cm = {
-        nodes: [{ label: 'bif' }, { label: 'baf' }],
-        edges: [{ from: 'bif' }, { to: 'baf' }],
+        nodes: [
+            { label: 'bif', id: 1 },
+            { label: 'baf', id: 2 },
+        ],
+        edges: [{ from: 1, to: 2 }],
     };
     let student = domain.createStudentMatrix(cm);
-    console.log({ student });
+    console.log({ student: student.valueOf() });
     let suggestion = EdgeSuggestion(domain, student);
     expect(suggestion).toBeNull();
 });

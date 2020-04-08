@@ -36,7 +36,7 @@ export class Domain {
             }, null);
     }
 
-    createStudentMatrix(cm: IConceptMap): Matrix {
+    createStudentMatrix(cm: IConceptMap, directed: boolean = false): Matrix {
         let student = matrix('dense');
 
         for (let i = 0; i < this.concepts.length; i++)
@@ -60,6 +60,7 @@ export class Domain {
             let to = concepts[edge.to];
             if (from && to) {
                 student.set([from.index, to.index], 1);
+                if (!directed) student.set([to.index, from.index], 1);
             }
         }
 
