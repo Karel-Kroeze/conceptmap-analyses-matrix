@@ -30,7 +30,18 @@ test('it gracefully fails for concept maps that are saturated', () => {
         edges: [{ from: 1, to: 2 }],
     };
     let student = domain.createStudentMatrix(cm);
-    console.log({ student: student.valueOf() });
     let suggestion = EdgeSuggestion(domain, student);
     expect(suggestion).toBeNull();
+});
+test('it recommends an edge', () => {
+    let cm = {
+        nodes: [
+            { label: 'bif', id: 1 },
+            { label: 'baf', id: 2 },
+        ],
+        edges: [],
+    };
+    let student = domain.createStudentMatrix(cm);
+    let suggestion = EdgeSuggestion(domain, student);
+    expect(suggestion).toBeDefined();
 });

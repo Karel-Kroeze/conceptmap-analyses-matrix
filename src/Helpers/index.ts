@@ -4,3 +4,4 @@ export * from './solve';
 export * from './vector';
 export * from './which';
 export * from './missing';
+export * from './cov2cor';

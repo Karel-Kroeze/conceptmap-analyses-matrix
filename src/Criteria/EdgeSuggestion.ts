@@ -9,6 +9,12 @@ import {
     presentConceptMatrix,
     missing,
     which,
+    presentDomainMatrix,
+    inv,
+    sqrt,
+    cov2cor,
+    subtract,
+    equal,
 } from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 import { Matrix } from 'mathjs';
@@ -35,30 +41,36 @@ export function EdgeSuggestion(
     student: Matrix,
     naive: boolean = false
 ): ICriteriumResult<IMissingEdgeHint> | null {
+    // check that we have enough concepts.
+    let concepts = student.diagonal() as number[];
+    if (sum(concepts) < 2) {
+        // console.warn({ message: 'not enough concepts', student });
+        return null;
+    }
+
+    let presentMatrix = presentConceptMatrix(student);
+    if (which(missing(presentMatrix)).length == 0) {
+        // console.warn({ message: 'concept map is saturated', student });
+        return null;
+    }
+
     let weights: Matrix = matrix().resize(reference.domain.size(), 0);
     if (naive) {
         weights = ensureMatrix(
             dotMultiply(reference.domain, missingConcepts(student)) as Matrix
         );
+    } else {
+        weights = ensureMatrix(
+            subtract(
+                presentDomainMatrix(student, cov2cor(reference.domain)),
+                partials(student, reference)
+            ) as Matrix
+        );
     }
 
-    // check that we have enough concepts.
-    let concepts = student.diagonal() as number[];
-    if (sum(concepts) < 2) {
-        console.warn({ message: 'not enough concepts', student });
-        return null;
-    }
-
-    let presentMatrix = presentConceptMatrix(student);
-    // console.dir({
-    //     presentMatrix: presentMatrix.valueOf(),
-    //     student: student.valueOf(),
-    //     missing: which(missing(presentMatrix)),
-    // });
-    if (which(missing(presentMatrix)).length == 0) {
-        console.warn({ message: 'concept map is saturated', student });
-        return null;
-    }
+    let maxWeight = max(weights);
+    let suggestions = which(equal(weights, maxWeight) as Matrix);
+    console.log({ weights, suggestions });
 
     return {
         id: 'test',
@@ -73,4 +85,20 @@ export function EdgeSuggestion(
             subject: {},
         },
     };
+}
+
+export function partials(student: Matrix, reference: Domain): Matrix {
+    let inverseDomain = inv(presentDomainMatrix(student, reference.domain));
+    let [sizeX, sizeY] = inverseDomain.size();
+    let partials = matrix('dense');
+    for (let x = 1; x < sizeX; x++) {
+        for (let y = 0; y < x; y++) {
+            let partial =
+                -inverseDomain.get([x, y]) /
+                sqrt(inverseDomain.get([x, x]) * inverseDomain.get([y, y]));
+            partials.set([x, y], partial, 1);
+            partials.set([y, x], partial, 1);
+        }
+    }
+    return partials;
 }
