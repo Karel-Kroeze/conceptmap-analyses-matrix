@@ -1,12 +1,10 @@
 import { Concept, MATCH_THRESHOLD } from './Concept';
 import { matrix } from './Helpers/math';
 import { Matrix } from 'mathjs';
-import IConceptMap = ut.tools.cm2.ConceptMapJSON;
+import { IConceptMap } from './Analyzer';
 
 export class Domain {
     private cm: IConceptMap | undefined;
-
-    //
 
     constructor(
         public name: string,
@@ -38,10 +36,7 @@ export class Domain {
 
     createStudentMatrix(cm: IConceptMap, directed: boolean = false): Matrix {
         let student = matrix('dense');
-
-        for (let i = 0; i < this.concepts.length; i++)
-            for (let j = 0; j < this.concepts.length; j++)
-                student.set([i, j], 0);
+        student.resize([this.concepts.length, this.concepts.length], 0);
 
         // map concepts
         let concepts: {
@@ -50,17 +45,25 @@ export class Domain {
         for (const concept of cm.nodes) {
             let match = this.getClosestConcept(concept.label!);
             if (match) {
-                concepts[concept.id] = match;
+                concepts[concept.id!] = match;
                 student.set([match.index, match.index], 1);
+            } else {
+                console.warn(`Could not match concept '${concept.label}'`);
             }
         }
 
         for (const edge of cm.edges) {
-            let from = concepts[edge.from];
-            let to = concepts[edge.to];
+            let from = concepts[edge.from!];
+            let to = concepts[edge.to!];
             if (from && to) {
                 student.set([from.index, to.index], 1);
                 if (!directed) student.set([to.index, from.index], 1);
+            } else {
+                console.warn(
+                    `Could not match edge '${edge.from} (${
+                        from ? from.concept.name : '??'
+                    }) -> ${edge.to} (${to ? to.concept.name : '??'})'`
+                );
             }
         }
 

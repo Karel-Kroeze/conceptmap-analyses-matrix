@@ -25,8 +25,8 @@ test('it suggests the correct node', () => {
     //     missing: missing(student),
     // });
     let suggestion = NodeSuggestion(domain, student, true);
-    expect(suggestion.hint.element_type).toBe('missing_node');
-    expect(suggestion.hint.subject.name).toBe('bif');
+    expect(suggestion[0].hint.element_type).toBe('missing_node');
+    expect(suggestion[0].hint.subject.name).toBe('bif');
 });
 
 let cm2 = {
@@ -42,8 +42,8 @@ test('it suggest the correct node [2]', () => {
     //     missing: missing(student2),
     // });
     let suggestion = NodeSuggestion(domain, student2);
-    expect(suggestion.hint.element_type).toBe('missing_node');
-    expect(suggestion.hint.subject.name).toBe('baf');
+    expect(suggestion[0].hint.element_type).toBe('missing_node');
+    expect(suggestion[0].hint.subject.name).toBe('baf');
 });
 let cm3 = {
     nodes: [
@@ -61,6 +61,6 @@ test('it suggest the correct node [3]', () => {
     //     missing: missing(student3),
     // });
     let suggestion = NodeSuggestion(domain, student3);
-    expect(suggestion.hint.element_type).toBe('missing_node');
-    expect(suggestion.hint.subject.name).toBe('boom');
+    expect(suggestion[0].hint.element_type).toBe('missing_node');
+    expect(suggestion[0].hint.subject.name).toBe('boom');
 });

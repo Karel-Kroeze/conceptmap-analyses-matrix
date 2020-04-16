@@ -1,12 +1,9 @@
 import { Domain } from '../Domain';
 import {
     matrix,
-    dotMultiply,
     ensureMatrix,
-    max,
-    missingConcepts,
     sum,
-    presentConceptMatrix,
+    presentStudentMatrix,
     missing,
     which,
     presentDomainMatrix,
@@ -14,7 +11,8 @@ import {
     sqrt,
     cov2cor,
     subtract,
-    equal,
+    studentDomainMatrix,
+    presentConceptIndices,
 } from '../Helpers';
 import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
 import { Matrix } from 'mathjs';
@@ -40,55 +38,53 @@ export function EdgeSuggestion(
     reference: Domain,
     student: Matrix,
     naive: boolean = false
-): ICriteriumResult<IMissingEdgeHint> | null {
-    // check that we have enough concepts.
-    let concepts = student.diagonal() as number[];
-    if (sum(concepts) < 2) {
-        // console.warn({ message: 'not enough concepts', student });
-        return null;
-    }
+): ICriteriumResult<IMissingEdgeHint>[] {
+    let weights = getEdgeWeights(reference, student);
+    let suggestions = which(weights)
+        .reduce((acc: [number, number][], cur: [number, number]) => {
+            if (!acc.some(s => s[0] === cur[1] && s[1] === cur[0]))
+                acc.push(cur);
+            return acc;
+        }, [])
+        .map(index => {
+            return {
+                index,
+                weight: weights.get(index),
+            };
+        })
+        .sort((a, b) => b.weight - a.weight);
 
-    let presentMatrix = presentConceptMatrix(student);
-    if (which(missing(presentMatrix)).length == 0) {
-        // console.warn({ message: 'concept map is saturated', student });
-        return null;
-    }
-
-    let weights: Matrix = matrix().resize(reference.domain.size(), 0);
-    if (naive) {
-        weights = ensureMatrix(
-            dotMultiply(reference.domain, missingConcepts(student)) as Matrix
-        );
-    } else {
-        weights = ensureMatrix(
-            subtract(
-                presentDomainMatrix(student, cov2cor(reference.domain)),
-                partials(student, reference)
-            ) as Matrix
-        );
-    }
-
-    let maxWeight = max(weights);
-    let suggestions = which(equal(weights, maxWeight) as Matrix);
-    console.log({ weights, suggestions });
-
-    return {
-        id: 'test',
-        criterion: 'edge-suggestion',
-        weight: 1,
-        priority: 1,
-        hint: {
-            element_type: 'missing_edge',
-            messages: [`maybe you should add some edges?`],
-            source: 'asd',
-            target: 'asd',
-            subject: {},
-        },
-    };
+    return suggestions.map(s => {
+        return {
+            id: 'test',
+            criterion: 'edge-suggestion',
+            weight: s.weight,
+            priority: 1,
+            hint: {
+                element_type: 'missing_edge',
+                messages: [
+                    `${reference.concepts[s.index[0]].name} <--> ${
+                        reference.concepts[s.index[1]].name
+                    }`,
+                ],
+                source: s.index[0],
+                target: s.index[1],
+                subject: { from: s.index[0], to: s.index[1] },
+            },
+            content: {
+                reference,
+                student,
+            },
+        };
+    });
 }
 
-export function partials(student: Matrix, reference: Domain): Matrix {
-    let inverseDomain = inv(presentDomainMatrix(student, reference.domain));
+export function getPartials(reference: Domain, student: Matrix): Matrix {
+    let inverseDomain = inv(studentDomainMatrix(student, reference.domain));
+    // console.log({
+    //     inverseDomain: inverseDomain.valueOf(),
+    //     student: studentDomainMatrix(student, reference.domain).valueOf(),
+    // });
     let [sizeX, sizeY] = inverseDomain.size();
     let partials = matrix('dense');
     for (let x = 1; x < sizeX; x++) {
@@ -101,4 +97,51 @@ export function partials(student: Matrix, reference: Domain): Matrix {
         }
     }
     return partials;
+}
+
+export function getEdgeWeights(reference: Domain, student: Matrix): Matrix {
+    // check that we have enough concepts.
+    let studentConcepts = student.diagonal() as number[];
+    if (sum(studentConcepts) < 2) {
+        // console.warn({ message: 'not enough concepts', student });
+        return matrix('dense').resize(
+            [reference.concepts.length, reference.concepts.length],
+            0
+        );
+    }
+
+    let presentMatrix = presentStudentMatrix(student);
+    if (which(missing(presentMatrix)).length == 0) {
+        // console.warn({ message: 'concept map is saturated', student });
+        return matrix('dense').resize(
+            [reference.concepts.length, reference.concepts.length],
+            0
+        );
+    }
+
+    const presentWeights = ensureMatrix(
+        subtract(
+            presentDomainMatrix(student, cov2cor(reference.domain)),
+            getPartials(reference, student)
+        ) as Matrix
+    );
+    const concepts = reference.concepts;
+    const presentIndices = presentConceptIndices(student);
+    const weights = matrix('dense').resize(
+        [concepts.length, concepts.length],
+        0
+    );
+
+    for (let ix = 1; ix < presentIndices.length; ix++) {
+        for (let iy = 0; iy < ix; iy++) {
+            // if student doesn't have this edge yet.
+            if (!student.get([presentIndices[ix], presentIndices[iy]])) {
+                const weight = presentWeights.get([ix, iy]);
+                weights.set([presentIndices[ix], presentIndices[iy]], weight);
+                weights.set([presentIndices[iy], presentIndices[ix]], weight);
+            }
+        }
+    }
+
+    return weights;
 }

@@ -62,9 +62,9 @@
         "downlevelIteration": true
     },
     "include": [
-        "./src",
-        "D:/Source/next-lab/client/tools/cm2/**/*.d.ts",
-        "D:/Source/next-lab/client/tools/refquest/**/*.d.ts",
-        "D:/Source/next-lab/client/common/js/**/*.d.ts"
+        "./src"
+        // "D:/Source/next-lab/client/tools/cm2/**/*.d.ts",
+        // "D:/Source/next-lab/client/tools/refquest/**/*.d.ts",
+        // "D:/Source/next-lab/client/common/js/**/*.d.ts"
     ]
 }

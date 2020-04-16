@@ -1,5 +1,6 @@
 import { Domain } from 'domain';
 import { Matrix } from 'mathjs';
+import { IdType } from 'vis';
 
 export interface ICriterion {
     (domain: Domain, student: Matrix): ICriteriumResult<IHint>;
@@ -27,8 +28,8 @@ export function isMissingEdgeHint(hint: IHint): hint is IMissingEdgeHint {
 }
 export interface IMissingEdgeHint extends IHint {
     element_type: 'missing_edge';
-    source: string;
-    target: string;
+    source: IdType;
+    target: IdType;
 }
 
 export function isMissingNodeHint(hint: IHint): hint is IMissingNodeHint {
@@ -43,7 +44,7 @@ export function isNodeHint(hint: IHint): hint is INodeHint {
 }
 export interface INodeHint extends IHint {
     element_type: 'node';
-    element_id: string;
+    element_id: IdType;
 }
 
 export function isEdgeHint(hint: IHint): hint is IEdgeHint {
@@ -51,5 +52,5 @@ export function isEdgeHint(hint: IHint): hint is IEdgeHint {
 }
 export interface IEdgeHint extends IHint {
     element_type: 'edge';
-    element_id: string;
+    element_id: IdType;
 }
