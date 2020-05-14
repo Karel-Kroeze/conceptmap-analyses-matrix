@@ -64,7 +64,7 @@ export function EdgeSuggestion(
                 element_type: 'missing_edge',
                 messages: [
                     `${reference.concepts[s.index[0]].name} <--> ${
-                        reference.concepts[s.index[1]].name
+                    reference.concepts[s.index[1]].name
                     }`,
                 ],
                 source: s.index[0],
@@ -81,17 +81,13 @@ export function EdgeSuggestion(
 
 export function getPartials(reference: Domain, student: Matrix): Matrix {
     let inverseDomain = inv(studentDomainMatrix(student, reference.domain));
-    // console.log({
-    //     inverseDomain: inverseDomain.valueOf(),
-    //     student: studentDomainMatrix(student, reference.domain).valueOf(),
-    // });
     let [sizeX, sizeY] = inverseDomain.size();
     let partials = matrix('dense');
     for (let x = 1; x < sizeX; x++) {
         for (let y = 0; y < x; y++) {
-            let partial =
-                -inverseDomain.get([x, y]) /
-                sqrt(inverseDomain.get([x, x]) * inverseDomain.get([y, y]));
+            let partial = -inverseDomain.get([x, y]) / sqrt(inverseDomain.get([x, x]) * inverseDomain.get([y, y]));
+            if (partial == NaN || partial == Infinity)
+                partial = 0;
             partials.set([x, y], partial, 1);
             partials.set([y, x], partial, 1);
         }
