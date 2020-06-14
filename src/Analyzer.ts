@@ -1,48 +1,45 @@
+import { Node, Edge } from 'vis';
+import { Domain } from './Domain';
+import {
+    EdgeSuggestion,
+    NodeSuggestion,
+    CriteriumResults,
+    IEdgeOptions,
+    INodeOptions,
+    TranslateFn,
+} from './Criteria';
+import { PhaseSuggestion } from './Criteria/PhaseSuggestion';
+import { registerTranslateFunction } from './Helpers/translate';
+
 export interface IConceptMap {
     nodes: Node[];
     edges: Edge[];
 }
-import {
-    ICriterion,
-    ICriteriumResult,
-    IHint,
-    isNodeHint,
-    isEdgeHint,
-    isMissingEdgeHint,
-} from './Criteria/ICriterion';
-import { Network, Position, Node, Edge } from 'vis';
-import { IdType } from 'vis';
-import { Domain } from './Domain';
-import { EdgeSuggestion, NodeSuggestion } from './Criteria';
-
-export function Analyze(domain: Domain, student: IConceptMap) {
-    const studentMatrix = domain.createStudentMatrix(student);
-    return [
-        ...EdgeSuggestion(domain, studentMatrix),
-        ...NodeSuggestion(domain, studentMatrix),
-    ].sort((a, b) => b.weight - a.weight);
+export interface IAnalyzerOptions {
+    edges?: IEdgeOptions;
+    nodes?: INodeOptions;
+    translate?: TranslateFn;
 }
 
-export function GetHintPosition(hint: IHint, network: Network): Position {
-    let positions: { [nodeId: string]: Position } = {};
-    if (isNodeHint(hint)) {
-        positions = network.getPositions([hint.element_id]);
-    }
-    if (isEdgeHint(hint)) {
-        let nodeIds = network.getConnectedNodes(hint.element_id) as IdType[];
-        positions = network.getPositions(nodeIds);
-    }
-    if (isMissingEdgeHint(hint)) {
-        positions = network.getPositions([hint.source, hint.target]);
-    }
-    let position = { x: 0, y: 0 };
-    let nodeCount = 0;
-    for (let node in positions) {
-        position.x += positions[node].x;
-        position.y += positions[node].y;
-        nodeCount++;
-    }
-    position.x /= nodeCount;
-    position.y /= nodeCount;
-    return network.canvasToDOM(position);
+export function Analyze(
+    domain: Domain,
+    student: IConceptMap,
+    options?: IAnalyzerOptions
+): CriteriumResults {
+    if (options?.translate) registerTranslateFunction(options.translate);
+    console.log({ student });
+
+    const { matrix, matches, typos, unknown } = domain.createStudentMatrix(
+        student
+    );
+    return [
+        PhaseSuggestion(domain, matrix, matches),
+        ...typos,
+        ...unknown,
+        ...NodeSuggestion(domain, matrix, options?.nodes),
+        ...EdgeSuggestion(domain, matrix, matches, options?.edges),
+    ].sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return b.weight - a.weight;
+    });
 }

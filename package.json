@@ -1,14 +1,25 @@
 {
     "name": "concept-map-analyzer-matrix",
     "version": "2.0.0",
-    "main": "lib/index.js",
+    "source": "src/index.ts",
+    "main": "lib/analyzer.js",
+    "types": "dist/analyzer.d.ts",
     "scripts": {
-        "test": "jest"
+        "test": "jest",
+        "build": "echo run ./build.bat"
+    },
+    "targets": {
+        "main": {
+            "isLibrary": false,
+            "context": "browser",
+            "includeNodeModules": true,
+            "outputFormat": "global"
+        }
     },
     "license": "MIT",
     "devDependencies": {
         "@types/cytoscape": "^3.1.10",
-        "@types/jest": "^25.1.4",
+        "@types/jest": "^25.2.1",
         "@types/lodash": "^4.14.149",
         "@types/mathjs": "^6.0.4",
         "@types/node": "^13.9.3",
@@ -16,13 +27,13 @@
         "@typescript-eslint/eslint-plugin": "^2.28.0",
         "@typescript-eslint/parser": "^2.28.0",
         "eslint": "^6.8.0",
-        "jest": "^25.1.0",
+        "jest": "^25.3.0",
+        "parcel": "^2.0.0-alpha.3.2",
         "prettier": "^2.0.2",
         "ts-jest": "^25.2.1",
         "typescript": "^3.8.3"
     },
     "dependencies": {
-        "cytoscape": "^3.2.13",
         "levenshtein-edit-distance": "^2.0.5",
         "lodash": "^4.17.15",
         "mathjs": "^6.6.1",

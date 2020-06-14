@@ -1,4 +1,4 @@
-import { Domain } from '../Domain';
+import { Domain, IConceptMatch } from '../Domain';
 import {
     matrix,
     ensureMatrix,
@@ -9,14 +9,14 @@ import {
     presentDomainMatrix,
     inv,
     sqrt,
-    cov2cor,
     subtract,
     studentDomainMatrix,
     presentConceptIndices,
 } from '../Helpers';
-import { ICriteriumResult, IMissingEdgeHint } from './ICriterion';
+import { ICriteriumResult, IMissingEdgeHint, MESSAGE } from './ICriterion';
 import { Matrix } from 'mathjs';
-import { SourceMap } from 'module';
+import { tryTranslate } from '../Helpers/translate';
+import { createNoResponse, createYesResponse } from './ResponseFactory';
 
 /**
  * If possible, returns a suggestion for the next most informative edge.
@@ -37,9 +37,10 @@ import { SourceMap } from 'module';
 export function EdgeSuggestion(
     reference: Domain,
     student: Matrix,
-    naive: boolean = false
+    matches: IConceptMatch[],
+    options?: IEdgeOptions
 ): ICriteriumResult<IMissingEdgeHint>[] {
-    let weights = getEdgeWeights(reference, student);
+    let weights = getEdgeWeights(reference, student, options);
     let suggestions = which(weights)
         .reduce((acc: [number, number][], cur: [number, number]) => {
             if (!acc.some(s => s[0] === cur[1] && s[1] === cur[0]))
@@ -55,22 +56,37 @@ export function EdgeSuggestion(
         .sort((a, b) => b.weight - a.weight);
 
     return suggestions.map(s => {
+        const from = matches.find(m => m.index === s.index[0])!;
+        const to = matches.find(m => m.index === s.index[1])!;
+
         return {
-            id: 'test',
+            id:
+                `edge-suggestion-` +
+                `${from?.concept.name}-` +
+                `${to?.concept.name}`,
             criterion: 'edge-suggestion',
+            message: 'edge-suggestion message here',
+            success: false,
             weight: s.weight,
-            priority: 1,
-            hint: {
-                element_type: 'missing_edge',
-                messages: [
-                    `${reference.concepts[s.index[0]].name} <--> ${
-                    reference.concepts[s.index[1]].name
-                    }`,
-                ],
-                source: s.index[0],
-                target: s.index[1],
-                subject: { from: s.index[0], to: s.index[1] },
-            },
+            priority: 2,
+            hints: [
+                {
+                    id:
+                        `edge-suggestion-` +
+                        `${from?.concept.name}-` +
+                        `${to?.concept.name}-hint`,
+                    element_type: 'missing_edge',
+                    message: tryTranslate(
+                        MESSAGE.MISSING_LINK,
+                        from.node.label!,
+                        to.node.label!
+                    ),
+                    source: from.node.id,
+                    target: to.node.id,
+                    subject: { from, to, s },
+                    responses: [createYesResponse(), createNoResponse()],
+                },
+            ],
             content: {
                 reference,
                 student,
@@ -79,23 +95,61 @@ export function EdgeSuggestion(
     });
 }
 
-export function getPartials(reference: Domain, student: Matrix): Matrix {
+export function getPartialsInternal(
+    reference: Domain,
+    student: Matrix,
+    defaultGetter: (index: [number, number]) => number
+): Matrix {
     let inverseDomain = inv(studentDomainMatrix(student, reference.domain));
-    let [sizeX, sizeY] = inverseDomain.size();
+    let [size, _] = inverseDomain.size();
     let partials = matrix('dense');
-    for (let x = 1; x < sizeX; x++) {
+    for (let x = 1; x < size; x++) {
         for (let y = 0; y < x; y++) {
-            let partial = -inverseDomain.get([x, y]) / sqrt(inverseDomain.get([x, x]) * inverseDomain.get([y, y]));
-            if (partial == NaN || partial == Infinity)
-                partial = 0;
-            partials.set([x, y], partial, 1);
-            partials.set([y, x], partial, 1);
+            let partial =
+                -inverseDomain.get([x, y]) /
+                sqrt(inverseDomain.get([x, x]) * inverseDomain.get([y, y]));
+            if (!isFinite(partial) || partial == 0)
+                partial = defaultGetter([x, y]);
+
+            partials.set([x, y], partial, 0);
+            partials.set([y, x], partial, 0);
         }
     }
     return partials;
 }
 
-export function getEdgeWeights(reference: Domain, student: Matrix): Matrix {
+export function getPartials(reference: Domain, student: Matrix) {
+    let observed = presentDomainMatrix(student, reference.domain);
+    return getPartialsInternal(reference, student, index =>
+        observed.get(index)
+    );
+}
+
+export function getRemainders(reference: Domain, student: Matrix) {
+    let observed = presentDomainMatrix(student, reference.domain);
+    return ensureMatrix(
+        subtract(
+            observed,
+            getPartialsInternal(reference, student, () => 0)
+        ) as Matrix
+    );
+}
+
+export interface IEdgeOptions {
+    weightType: 'Partials' | 'Remainder';
+}
+
+const defaultOptions: IEdgeOptions = {
+    weightType: 'Partials',
+};
+
+export function getEdgeWeights(
+    reference: Domain,
+    student: Matrix,
+    options?: IEdgeOptions
+): Matrix {
+    options = Object.assign({}, defaultOptions, options);
+
     // check that we have enough concepts.
     let studentConcepts = student.diagonal() as number[];
     if (sum(studentConcepts) < 2) {
@@ -115,12 +169,18 @@ export function getEdgeWeights(reference: Domain, student: Matrix): Matrix {
         );
     }
 
-    const presentWeights = ensureMatrix(
-        subtract(
-            presentDomainMatrix(student, cov2cor(reference.domain)),
-            getPartials(reference, student)
-        ) as Matrix
-    );
+    let presentWeights: Matrix;
+    switch (options.weightType) {
+        case 'Partials':
+            presentWeights = getPartials(reference, student);
+            break;
+        case 'Remainder':
+            presentWeights = getRemainders(reference, student);
+            break;
+        default:
+            throw 'unknown weightType';
+    }
+
     const concepts = reference.concepts;
     const presentIndices = presentConceptIndices(student);
     const weights = matrix('dense').resize(

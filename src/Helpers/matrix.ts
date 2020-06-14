@@ -1,5 +1,6 @@
 import { Matrix, typeOf } from 'mathjs';
 import { matrix, isVector, index, which, missing } from '.';
+import { Z_SYNC_FLUSH } from 'zlib';
 
 export function isMatrix(input: any): input is Matrix {
     return typeOf(input) === 'Matrix';
@@ -18,6 +19,23 @@ export function ensureMatrix(
         return matrix(input);
     }
     return input;
+}
+
+export function removeIndex(input: Matrix, index: number): Matrix {
+    // there's probably a clever way to do this, but I'm just going to iterate.
+    const size = input.size();
+    const result = matrix('dense');
+
+    for (let _x = 0; _x < size[0]; _x++) {
+        if (_x == index) continue;
+        let x = _x > index ? _x - 1 : _x;
+        for (let _y = 0; _y < size[1]; _y++) {
+            if (_y == index) continue;
+            let y = _y > index ? _y - 1 : _y;
+            result.set([x, y], input.get([_x, _y]));
+        }
+    }
+    return result;
 }
 
 /**
