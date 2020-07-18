@@ -48,12 +48,12 @@ export interface ICriterion {
         domain: Domain,
         student: Matrix,
         translate?: TranslateFn
-    ): ICriteriumResult<IHint>;
+    ): ICriterionResult<IHint>;
 }
 
-export type CriteriumResults = ICriteriumResult<IHint>[];
+export type CriterionResults = ICriterionResult<IHint>[];
 
-export interface ICriteriumResult<T extends IHint> {
+export interface ICriterionResult<T extends IHint> {
     id: string;
     criterion: string;
     success: boolean;

@@ -1,6 +1,6 @@
 import { Domain } from '../Domain';
 import { Matrix } from 'mathjs';
-import { ICriteriumResult, IMissingNodeHint, MESSAGE } from './ICriterion';
+import { ICriterionResult, IMissingNodeHint, MESSAGE } from './ICriterion';
 import {
     dotMultiply,
     index,
@@ -13,6 +13,7 @@ import {
     ensureMatrix,
     solve,
     which,
+    clamp,
 } from '../Helpers';
 import { tryTranslate } from '../Helpers/translate';
 import { createYesResponse, createNoResponse } from './ResponseFactory';
@@ -20,8 +21,9 @@ import { createYesResponse, createNoResponse } from './ResponseFactory';
 type WeightType = 'Weighted' | 'Quartiles';
 
 function getBalanced(weight: number, balance: number) {
-    var inverse = 1 - Math.max(0, Math.min(weight, 1)); // clamp weight to 0-1;
-    return balance * weight + (1 - balance) * inverse; // weighted average
+    weight = clamp(weight); // clamp weight to 0-1;
+    var inverse = 1 - weight;
+    return balance * weight * (1 - balance) * inverse; // weighted product
 }
 
 function getQuartile(value: number, values: number[]) {
@@ -66,7 +68,7 @@ export function NodeSuggestion(
     reference: Domain,
     student: Matrix,
     options?: INodeOptions
-): ICriteriumResult<IMissingNodeHint>[] {
+): ICriterionResult<IMissingNodeHint>[] {
     options = Object.assign({}, defaultNodeOptions, options);
     const weights = getNodeWeights(reference, student, options);
     const suggestions = which(weights)

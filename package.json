@@ -6,7 +6,8 @@
     "types": "dist/analyzer.d.ts",
     "scripts": {
         "test": "jest",
-        "build": "echo run ./build.bat"
+        "graasp:build": "start build.bat",
+        "graasp:watch": "sane \"npm run graasp:build\" --wait=10 ./src"
     },
     "targets": {
         "main": {
@@ -19,7 +20,7 @@
     "license": "MIT",
     "devDependencies": {
         "@types/cytoscape": "^3.1.10",
-        "@types/jest": "^25.2.1",
+        "@types/jest": "^25.2.3",
         "@types/lodash": "^4.14.149",
         "@types/mathjs": "^6.0.4",
         "@types/node": "^13.9.3",
@@ -30,6 +31,7 @@
         "jest": "^25.3.0",
         "parcel": "^2.0.0-alpha.3.2",
         "prettier": "^2.0.2",
+        "sane": "^4.1.0",
         "ts-jest": "^25.2.1",
         "typescript": "^3.8.3"
     },

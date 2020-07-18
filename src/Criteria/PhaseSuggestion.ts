@@ -1,6 +1,6 @@
 import { Domain, IConceptMatch } from '../Domain';
 import {
-    ICriteriumResult,
+    ICriterionResult,
     IHint,
     MESSAGE,
     INodeHint,
@@ -30,7 +30,7 @@ export function PhaseSuggestion(
     reference: Domain,
     student: Matrix,
     matches: IConceptMatch[]
-): ICriteriumResult<IHint> {
+): ICriterionResult<IHint> {
     // for the first five concepts, suggest most important overall
     let conceptCount = sum(presentConcepts(student));
     if (conceptCount < 5) {
@@ -38,6 +38,7 @@ export function PhaseSuggestion(
     }
 
     let edgeCount = sum(student) - conceptCount;
+
     if (edgeCount < 5) {
         return edgePhaseCriterium(reference, student, matches, 5 - edgeCount);
     }
@@ -57,7 +58,7 @@ function edgePhaseCriterium(
     student: Matrix,
     matches: IConceptMatch[],
     count: number
-): ICriteriumResult<IHint | IEdgeHint> {
+): ICriterionResult<IHint | IEdgeHint> {
     let weights = presentDomainMatrix(student, reference.domain);
     for (let index of which(presentStudentMatrix(student)))
         weights.set(index, 0);
@@ -121,7 +122,7 @@ function conceptPhaseCriterium(
     reference: Domain,
     student: Matrix,
     count: number
-): ICriteriumResult<IHint | INodeHint> {
+): ICriterionResult<IHint | INodeHint> {
     let weights = getNodeWeights(reference, student, { naieve: true });
     let concepts = weights
         .map((weight, index) => {

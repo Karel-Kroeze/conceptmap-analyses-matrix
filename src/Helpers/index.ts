@@ -6,3 +6,4 @@ export * from './which';
 export * from './missing';
 export * from './cov2cor';
 export * from './cor2cov';
+export * from './clamp';

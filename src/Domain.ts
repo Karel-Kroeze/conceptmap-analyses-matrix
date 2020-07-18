@@ -1,13 +1,14 @@
 import { Concept, IConceptJSON, MATCH_THRESHOLD, Match } from './Concept';
-import { matrix } from './Helpers/math';
+import { matrix, multiply, inv } from './Helpers/math';
 import { Matrix } from 'mathjs';
 import { IConceptMap } from './Analyzer';
-import { ICriteriumResult, IHint } from './Criteria';
+import { ICriterionResult, IHint } from './Criteria';
 import {
     createTypoSuggestion,
     createUnknownSuggestion,
 } from './Criteria/TypoSuggestion';
 import { Node } from 'vis';
+import { presentConceptIndices } from './Helpers';
 
 export interface IDomainJSON {
     name: string;
@@ -63,18 +64,57 @@ export class Domain {
             });
     }
 
+    scoreStudentMatrix(cm: IConceptMap, directed: boolean = false): number {
+        let student = this.createStudentMatrix(cm, directed).matrix;
+
+        // multiple to get student-augmented matrix
+        let omega_s = multiply(this.domain, student);
+
+        // make sure that all concepts are present
+        for (let i = 0; i < this.concepts.length; i++) {
+            omega_s.set([i, i], this.domain.get([i, i]));
+        }
+
+        // get inverse matrix
+        let inverse = inv(omega_s);
+
+        // calculate partial correlations
+        let present = presentConceptIndices(student);
+        let Rho = matrix('dense').resize(student.size(), 0);
+        let rho = (i: number, j: number) => {
+            if (i == j) {
+                return -inverse.get([i, j]) / Math.abs(inverse.get([i, j]));
+            }
+            if (!present.includes(i) || !present.includes(j)) {
+                return 0;
+            }
+            return (
+                -inverse.get([i, j]) /
+                Math.sqrt(inverse.get([i, i]) * inverse.get([j, j]))
+            );
+        };
+        for (let i = 0; i < this.concepts.length; i++) {
+            for (let j = 0; j < this.concepts.length; j++) {
+                Rho.set([i, j], rho(i, j));
+            }
+        }
+
+        // TODO: implement LL/ChiSquare?
+        return 0;
+    }
+
     createStudentMatrix(
         cm: IConceptMap,
         directed: boolean = false
     ): {
         matrix: Matrix;
         matches: IConceptMatch[];
-        typos: ICriteriumResult<IHint>[];
-        unknown: ICriteriumResult<IHint>[];
+        typos: ICriterionResult<IHint>[];
+        unknown: ICriterionResult<IHint>[];
     } {
         let student = matrix('dense');
-        let typos: ICriteriumResult<IHint>[] = [];
-        let unknown: ICriteriumResult<IHint>[] = [];
+        let typos: ICriterionResult<IHint>[] = [];
+        let unknown: ICriterionResult<IHint>[] = [];
         student.resize([this.concepts.length, this.concepts.length], 0);
 
         // map concepts

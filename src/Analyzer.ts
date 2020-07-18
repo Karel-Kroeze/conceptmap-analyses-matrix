@@ -3,7 +3,7 @@ import { Domain } from './Domain';
 import {
     EdgeSuggestion,
     NodeSuggestion,
-    CriteriumResults,
+    CriterionResults,
     IEdgeOptions,
     INodeOptions,
     TranslateFn,
@@ -25,7 +25,7 @@ export function Analyze(
     domain: Domain,
     student: IConceptMap,
     options?: IAnalyzerOptions
-): CriteriumResults {
+): CriterionResults {
     if (options?.translate) registerTranslateFunction(options.translate);
     console.log({ student });
 

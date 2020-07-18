@@ -13,7 +13,7 @@ import {
     studentDomainMatrix,
     presentConceptIndices,
 } from '../Helpers';
-import { ICriteriumResult, IMissingEdgeHint, MESSAGE } from './ICriterion';
+import { ICriterionResult, IMissingEdgeHint, MESSAGE } from './ICriterion';
 import { Matrix } from 'mathjs';
 import { tryTranslate } from '../Helpers/translate';
 import { createNoResponse, createYesResponse } from './ResponseFactory';
@@ -39,7 +39,7 @@ export function EdgeSuggestion(
     student: Matrix,
     matches: IConceptMatch[],
     options?: IEdgeOptions
-): ICriteriumResult<IMissingEdgeHint>[] {
+): ICriterionResult<IMissingEdgeHint>[] {
     let weights = getEdgeWeights(reference, student, options);
     let suggestions = which(weights)
         .reduce((acc: [number, number][], cur: [number, number]) => {

@@ -4,6 +4,10 @@ let testMatrix = matrix([
     [1, 2],
     [2, 3],
 ]);
+let zeroMatrix = matrix([
+    [0, 0],
+    [0, 0],
+]);
 test('i understand matrix.diagonal', () => {
     expect(testMatrix.diagonal().valueOf()).toEqual([1, 3]);
 });
@@ -17,6 +21,12 @@ test('multiply vector x vector', () => {
         3,
         9,
     ]);
+});
+
+test('multiply matrix x matrix', () => {
+    expect(multiply(testMatrix, zeroMatrix).valueOf()).toEqual(
+        zeroMatrix.valueOf()
+    );
 });
 
 let testMatrix2 = matrix([

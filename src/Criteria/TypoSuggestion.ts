@@ -1,6 +1,6 @@
 import { IConceptMatch, Domain } from '../Domain';
 import {
-    ICriteriumResult,
+    ICriterionResult,
     MESSAGE,
     COOLDOWN,
     IHint,
@@ -14,7 +14,7 @@ export function createUnknownSuggestion(
     node: Node,
     domain: Domain,
     threshold = 0.5
-): ICriteriumResult<IHint> | null {
+): ICriterionResult<IHint> | null {
     let closest = domain.getClosestConcept(node, threshold); // use a significantly lower threshold to find the best match
     if (closest)
         return createTypoSuggestion(closest, { priority: 1.5, weight: 1 });
@@ -23,8 +23,8 @@ export function createUnknownSuggestion(
 
 export function createTypoSuggestion(
     closest: IConceptMatch,
-    partial?: Partial<ICriteriumResult<IHint>>
-): ICriteriumResult<IHint | ITypoHint> {
+    partial?: Partial<ICriterionResult<IHint>>
+): ICriterionResult<IHint | ITypoHint> {
     return Object.assign(
         {
             criterion: `typos`,
