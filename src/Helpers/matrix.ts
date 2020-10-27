@@ -1,6 +1,5 @@
 import { Matrix, typeOf } from 'mathjs';
 import { matrix, isVector, index, which, missing } from '.';
-import { Z_SYNC_FLUSH } from 'zlib';
 
 export function isMatrix(input: any): input is Matrix {
     return typeOf(input) === 'Matrix';
@@ -85,4 +84,44 @@ export function studentDomainMatrix(student: Matrix, domain: Matrix): Matrix {
     let present = which(presentStudent);
     for (let index of present) result.set(index, presentDomain.get(index), 0);
     return result;
+}
+
+/**
+ * Normalize a matrix or vector, uniformly lowering each value.
+ *
+ * @param matrix a 1 by X vector or X by X matrix to be normalized
+ * @param normalizeFn a function that returns a normalization coefficient and accepts a size as an input. Defaults to `Math.sqrt`
+ */
+export function normalize(
+    matrix: Matrix,
+    normalizeFn: (arg0: number) => number = Math.sqrt
+): Matrix {
+    const [rows, cols] = matrix.size();
+    if (rows != cols && (rows == 1 || cols == 1))
+        return normalizeVector(matrix);
+    if (rows != cols) throw 'normalize expects a square matrix';
+    if (rows > 1) {
+        const sizeFactor = normalizeFn(rows);
+        for (let i = 1; i < rows; i++) {
+            for (let j = 0; j < i; j++) {
+                const adjustedVariance = matrix.get([i, j]) / sizeFactor;
+                matrix.set([i, j], adjustedVariance);
+                matrix.set([j, i], adjustedVariance);
+            }
+        }
+    }
+    return matrix;
+}
+
+function normalizeVector(
+    vector: Matrix,
+    normalizeFn: (arg0: number) => number = Math.sqrt
+): Matrix {
+    const size = Math.max(...vector.size());
+    console.log({ vector, size });
+    if (size > 1) {
+        const sizeFactor = normalizeFn(size);
+        vector = vector.map(v => v / sizeFactor);
+    }
+    return vector;
 }

@@ -10,6 +10,10 @@ import {
 } from './Criteria';
 import { PhaseSuggestion } from './Criteria/PhaseSuggestion';
 import { registerTranslateFunction } from './Helpers/translate';
+import {
+    LongLabelSuggestion,
+    LongNameSuggestion,
+} from './Criteria/LongLabelSuggestion';
 
 export interface IConceptMap {
     nodes: Node[];
@@ -19,6 +23,7 @@ export interface IAnalyzerOptions {
     edges?: IEdgeOptions;
     nodes?: INodeOptions;
     translate?: TranslateFn;
+    language?: string;
 }
 
 export function Analyze(
@@ -27,7 +32,6 @@ export function Analyze(
     options?: IAnalyzerOptions
 ): CriterionResults {
     if (options?.translate) registerTranslateFunction(options.translate);
-    console.log({ student });
 
     const { matrix, matches, typos, unknown } = domain.createStudentMatrix(
         student
@@ -38,6 +42,8 @@ export function Analyze(
         ...unknown,
         ...NodeSuggestion(domain, matrix, options?.nodes),
         ...EdgeSuggestion(domain, matrix, matches, options?.edges),
+        ...LongLabelSuggestion(student, domain, options?.language),
+        ...LongNameSuggestion(student, domain, options?.language),
     ].sort((a, b) => {
         if (a.priority !== b.priority) return a.priority - b.priority;
         return b.weight - a.weight;

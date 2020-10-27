@@ -18,3 +18,7 @@ export const chain = math.chain!;
 export const inv = math.inv!;
 export const subtract = math.subtract!;
 export const equal = math.equal!;
+export const det = math.det!;
+export const transpose = math.transpose!;
+export const log = math.log!;
+export const trace = math.trace!;

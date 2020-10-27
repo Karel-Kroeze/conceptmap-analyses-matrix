@@ -2,65 +2,32 @@ import { Domain } from '../Domain';
 import { Matrix } from 'mathjs';
 import { ICriterionResult, IMissingNodeHint, MESSAGE } from './ICriterion';
 import {
-    dotMultiply,
     index,
     sum,
-    subset,
     vector,
     presentDomainMatrix,
     presentConceptIndices,
     missingConceptIndices,
     ensureMatrix,
-    solve,
     which,
     clamp,
+    det,
+    cov2cor,
+    inv,
+    transpose,
+    multiply,
+    normalize,
 } from '../Helpers';
 import { tryTranslate } from '../Helpers/translate';
 import { createYesResponse, createNoResponse } from './ResponseFactory';
 
-type WeightType = 'Weighted' | 'Quartiles';
-
-function getBalanced(weight: number, balance: number) {
-    weight = clamp(weight); // clamp weight to 0-1;
-    var inverse = 1 - weight;
-    return balance * weight * (1 - balance) * inverse; // weighted product
-}
-
-function getQuartile(value: number, values: number[]) {
-    return values.filter(v => v <= value).length / values.length;
-}
-
-function postProcessWeights(
-    weights: number[],
-    options: INodeOptions
-): number[] {
-    switch (options.weightType) {
-        case 'Weighted':
-            return weights.map(w => getBalanced(w, options.weightBalance!));
-        case 'Quartiles':
-            return (
-                weights
-                    // calculate quartile for each value
-                    .map(w => getQuartile(w, weights))
-                    // convert to 1 - distance from ideal
-                    .map(q => 1 - Math.abs(q - options.weightBalance!))
-            );
-        default:
-            throw 'unexpected type';
-    }
-}
-
 export interface INodeOptions {
-    naieve?: boolean;
-    weightType?: WeightType;
-    weightBalance?: number;
+    naive?: boolean;
     weightFactor?: number;
 }
 
 const defaultNodeOptions: INodeOptions = {
-    naieve: true,
-    weightType: 'Weighted',
-    weightBalance: 1,
+    naive: true,
     weightFactor: 1,
 };
 
@@ -114,36 +81,63 @@ export function getNodeWeights(
     options = Object.assign({}, defaultNodeOptions, options);
     let weights: number[] = [];
     let concepts = vector<number>(reference.domain.diagonal());
-    if (sum(student.diagonal()) == 0) options.naieve = true;
+    if (sum(student.diagonal()) == 0) options.naive = true;
 
-    if (options.naieve) {
+    if (options.naive) {
         weights = concepts;
     } else {
-        let X = presentDomainMatrix(student, reference.domain);
-        for (let i of presentConceptIndices(student)) weights[i] = 0;
+        // large matrices get an increasing amount of explained variance,
+        // leading to multi-collinearity issues. To try to avoid this, we'll
+        // artificially lower the amount of variance in the matrix.
+        let X = normalize(
+            presentDomainMatrix(student, cov2cor(reference.domain))
+        );
         for (let i of missingConceptIndices(student)) {
             let y = ensureMatrix(
-                reference.domain.subset(
+                cov2cor(reference.domain).subset(
                     index(presentConceptIndices(student), [i])
                 )
             );
-            let lu = solve(X, y);
-            weights[i] = sum(
-                ...(<number[]>(
-                    dotMultiply(
-                        subset(concepts, index(presentConceptIndices(student))),
-                        lu
-                    )
-                ))
+            console.log({ pre: y.valueOf() });
+            y = normalize(y);
+            console.log({ post: y.valueOf() });
+
+            let inverse = inv(X);
+            // let lu = solve(X, y);
+            // let R22 = sum(
+            //     ...(<number[]>(
+            //         dotMultiply(
+            //             subset(concepts, index(presentConceptIndices(student))),
+            //             lu
+            //         )
+            //     ))
+            // );
+
+            // https://en.wikipedia.org/wiki/Multiple_correlation#Computation
+            let R2 = clamp(
+                multiply(multiply(transpose(y), inverse), y).get([0, 0]),
+                0.1,
+                0.9
             );
+            console.log({
+                R2,
+                concept: reference.concepts[i].name,
+                variance: reference.domain.get([i, i]),
+                weight: options.weightFactor,
+                y: y.valueOf(),
+                X: X.valueOf(),
+                det: det(X),
+            });
+
+            weights[i] =
+                R2 * // existing information
+                (1 - R2) * // new information
+                reference.domain.get([i, i]) * // total information (variance)
+                options.weightFactor!; // weight factor for nodes
         }
-        // post-process
-        weights = postProcessWeights(weights, options);
     }
 
     // set already present nodes to 0
     for (let i of presentConceptIndices(student)) weights[i] = 0;
-
-    // apply weight factor
-    return weights.map(w => w * options!.weightFactor!);
+    return weights;
 }

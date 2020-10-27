@@ -1,7 +1,6 @@
 import { Domain, IConceptMatch } from '../Domain';
 import {
     matrix,
-    ensureMatrix,
     sum,
     presentStudentMatrix,
     missing,
@@ -9,9 +8,8 @@ import {
     presentDomainMatrix,
     inv,
     sqrt,
-    subtract,
-    studentDomainMatrix,
     presentConceptIndices,
+    normalize,
 } from '../Helpers';
 import { ICriterionResult, IMissingEdgeHint, MESSAGE } from './ICriterion';
 import { Matrix } from 'mathjs';
@@ -25,10 +23,11 @@ import { createNoResponse, createYesResponse } from './ResponseFactory';
  * student matrix that is not itself present in the student matrix, maximizing by correlation
  * in the domain correlation matrix.
  *
- * In non-naieve mode, uses the inverse of the elements in the domain covariance matrix
- * present in the student matrix to obtain partial correlations. These partial correlations
- * are then compared to the domain correlation matrix, and the edge with the largest distance
- * between student and domain matrix is returned.
+ * In non-naieve mode, uses the inverse of the subset of the domain covariance matrix
+ * relating to concepts present in the student matrix to obtain partial correlations.
+ * Weights are then equal to the partial correlations.
+ * NOTE: this is NOT adaptive to edges in the student map, but we can't do that without
+ * getting into directional territory?
  *
  * @param reference Domain reference
  * @param student Student concept matrix
@@ -100,8 +99,10 @@ export function getPartialsInternal(
     student: Matrix,
     defaultGetter: (index: [number, number]) => number
 ): Matrix {
-    let inverseDomain = inv(studentDomainMatrix(student, reference.domain));
-    let [size, _] = inverseDomain.size();
+    let inverseDomain = inv(
+        normalize(presentDomainMatrix(student, reference.domain))
+    );
+    let [size] = inverseDomain.size();
     let partials = matrix('dense');
     for (let x = 1; x < size; x++) {
         for (let y = 0; y < x; y++) {
@@ -125,23 +126,9 @@ export function getPartials(reference: Domain, student: Matrix) {
     );
 }
 
-export function getRemainders(reference: Domain, student: Matrix) {
-    let observed = presentDomainMatrix(student, reference.domain);
-    return ensureMatrix(
-        subtract(
-            observed,
-            getPartialsInternal(reference, student, () => 0)
-        ) as Matrix
-    );
-}
+export interface IEdgeOptions {}
 
-export interface IEdgeOptions {
-    weightType: 'Partials' | 'Remainder';
-}
-
-const defaultOptions: IEdgeOptions = {
-    weightType: 'Partials',
-};
+const defaultOptions: IEdgeOptions = {};
 
 export function getEdgeWeights(
     reference: Domain,
@@ -169,18 +156,7 @@ export function getEdgeWeights(
         );
     }
 
-    let presentWeights: Matrix;
-    switch (options.weightType) {
-        case 'Partials':
-            presentWeights = getPartials(reference, student);
-            break;
-        case 'Remainder':
-            presentWeights = getRemainders(reference, student);
-            break;
-        default:
-            throw 'unknown weightType';
-    }
-
+    const partials = getPartials(reference, student);
     const concepts = reference.concepts;
     const presentIndices = presentConceptIndices(student);
     const weights = matrix('dense').resize(
@@ -192,7 +168,7 @@ export function getEdgeWeights(
         for (let iy = 0; iy < ix; iy++) {
             // if student doesn't have this edge yet.
             if (!student.get([presentIndices[ix], presentIndices[iy]])) {
-                const weight = presentWeights.get([ix, iy]);
+                const weight = partials.get([ix, iy]);
                 weights.set([presentIndices[ix], presentIndices[iy]], weight);
                 weights.set([presentIndices[iy], presentIndices[ix]], weight);
             }

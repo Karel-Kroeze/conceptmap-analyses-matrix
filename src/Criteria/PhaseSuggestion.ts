@@ -23,8 +23,6 @@ import {
     createYesResponse,
 } from './ResponseFactory';
 import { tryTranslate } from '../Helpers/translate';
-import { Concept } from '../Concept';
-import { format } from 'url';
 
 export function PhaseSuggestion(
     reference: Domain,
@@ -34,26 +32,26 @@ export function PhaseSuggestion(
     // for the first five concepts, suggest most important overall
     let conceptCount = sum(presentConcepts(student));
     if (conceptCount < 5) {
-        return conceptPhaseCriterium(reference, student, 5 - conceptCount);
+        return conceptPhaseCriterion(reference, student, 5 - conceptCount);
     }
 
     let edgeCount = sum(student) - conceptCount;
 
     if (edgeCount < 5) {
-        return edgePhaseCriterium(reference, student, matches, 5 - edgeCount);
+        return edgePhaseCriterion(reference, student, matches, 5 - edgeCount);
     }
 
     return {
-        id: `phase-criterium-passed`,
-        message: `phase-criterium-passed`,
-        criterion: `phase-criterium`,
+        id: `phase-criterion-passed`,
+        message: `phase-criterion-passed`,
+        criterion: `phase-criterion`,
         success: true,
         weight: 1,
         priority: 1,
     };
 }
 
-function edgePhaseCriterium(
+function edgePhaseCriterion(
     reference: Domain,
     student: Matrix,
     matches: IConceptMatch[],
@@ -118,12 +116,12 @@ function edgePhaseCriterium(
     };
 }
 
-function conceptPhaseCriterium(
+function conceptPhaseCriterion(
     reference: Domain,
     student: Matrix,
     count: number
 ): ICriterionResult<IHint | INodeHint> {
-    let weights = getNodeWeights(reference, student, { naieve: true });
+    let weights = getNodeWeights(reference, student, { naive: true });
     let concepts = weights
         .map((weight, index) => {
             return { weight, concept: reference.concepts[index], index };

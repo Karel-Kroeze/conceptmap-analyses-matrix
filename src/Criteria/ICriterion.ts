@@ -22,6 +22,8 @@ export const MESSAGE = {
     TYPO: 'feedback.hints.typoQuestion',
     TYPO_RENAME: 'feedback.hints.typoConfirm',
     TYPO_SAME: 'feedback.same',
+    LONG_NAME: 'feedback.hints.longConceptName',
+    LONG_LABEL: 'feedback.hints.longRelationName',
 
     /**
      * feedback.configuration.explanation

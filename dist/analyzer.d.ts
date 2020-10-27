@@ -40,6 +40,10 @@ export const chain: (value?: any) => import("mathjs").MathJsChain;
 export const inv: <T extends number | import("mathjs").Complex | number[] | number[][] | import("mathjs").Matrix>(x: T) => T extends number ? number : T extends string ? string : T extends boolean ? boolean : T;
 export const subtract: (x: import("mathjs").MathType, y: import("mathjs").MathType) => import("mathjs").MathType;
 export const equal: (x: string | number | import("mathjs").BigNumber | import("mathjs").Fraction | import("mathjs").Complex | import("mathjs").Unit | number[] | number[][] | import("mathjs").Matrix, y: string | number | import("mathjs").BigNumber | import("mathjs").Fraction | import("mathjs").Complex | import("mathjs").Unit | number[] | number[][] | import("mathjs").Matrix) => boolean | number[] | number[][] | import("mathjs").Matrix;
+export const det: (x: number[] | number[][] | import("mathjs").Matrix) => number;
+export const transpose: <T extends number[] | number[][] | import("mathjs").Matrix>(x: T) => T;
+export const log: <T extends number | import("mathjs").BigNumber | import("mathjs").Complex | number[] | number[][] | import("mathjs").Matrix>(x: T, base?: number | import("mathjs").BigNumber | import("mathjs").Complex | undefined) => T extends number ? number : T extends string ? string : T extends boolean ? boolean : T;
+export const trace: (x: number[] | number[][] | import("mathjs").Matrix) => number;
 export const MATCH_THRESHOLD = 0.8;
 export interface Match {
     name: string;
@@ -78,13 +82,15 @@ export const MESSAGE: {
     TYPO: string;
     TYPO_RENAME: string;
     TYPO_SAME: string;
+    LONG_NAME: string;
+    LONG_LABEL: string;
 };
 export type TranslateFn = (key: string, ...args: string[]) => string;
 export interface ICriterion {
-    (domain: Domain, student: Matrix, translate?: TranslateFn): ICriteriumResult<IHint>;
+    (domain: Domain, student: Matrix, translate?: TranslateFn): ICriterionResult<IHint>;
 }
-export type CriteriumResults = ICriteriumResult<IHint>[];
-export interface ICriteriumResult<T extends IHint> {
+export type CriterionResults = ICriterionResult<IHint>[];
+export interface ICriterionResult<T extends IHint> {
     id: string;
     criterion: string;
     success: boolean;
@@ -172,6 +178,13 @@ export function presentStudentMatrix(student: Matrix): Matrix;
 export function presentDomainMatrix(student: Matrix, domain: Matrix): Matrix;
 export function presentToDomainIndex(index: [number, number], student: Matrix): [number, number];
 export function studentDomainMatrix(student: Matrix, domain: Matrix): Matrix;
+/**
+ * Normalize a matrix or vector, uniformly lowering each value.
+ *
+ * @param matrix a 1 by X vector or X by X matrix to be normalized
+ * @param normalizeFn a function that returns a normalization coefficient and accepts a size as an input. Defaults to `Math.sqrt`
+ */
+export function normalize(matrix: Matrix, normalizeFn?: (arg0: number) => number): Matrix;
 export function isVector<T extends number | boolean>(input: any): input is T[];
 export function isVector2D(input: any): input is number[][];
 export function vector<T>(input: T[]): T[];
@@ -186,14 +199,12 @@ export function missing(input: boolean[] | number[]): number[];
 export function missing(input: Matrix): Matrix;
 export function cov2cor(covariance: Matrix): Matrix;
 export function cor2cov(correlation: Matrix, variance: number[]): Matrix;
-type WeightType = 'Weighted' | 'Quartiles';
+export function clamp(value: number, min?: number, max?: number): number;
 export interface INodeOptions {
-    naieve?: boolean;
-    weightType?: WeightType;
-    weightBalance?: number;
+    naive?: boolean;
     weightFactor?: number;
 }
-export function NodeSuggestion(reference: Domain, student: Matrix, options?: INodeOptions): ICriteriumResult<IMissingNodeHint>[];
+export function NodeSuggestion(reference: Domain, student: Matrix, options?: INodeOptions): ICriterionResult<IMissingNodeHint>[];
 export function getNodeWeights(reference: Domain, student: Matrix, options?: INodeOptions): number[];
 /**
  * If possible, returns a suggestion for the next most informative edge.
@@ -202,21 +213,20 @@ export function getNodeWeights(reference: Domain, student: Matrix, options?: INo
  * student matrix that is not itself present in the student matrix, maximizing by correlation
  * in the domain correlation matrix.
  *
- * In non-naieve mode, uses the inverse of the elements in the domain covariance matrix
- * present in the student matrix to obtain partial correlations. These partial correlations
- * are then compared to the domain correlation matrix, and the edge with the largest distance
- * between student and domain matrix is returned.
+ * In non-naieve mode, uses the inverse of the subset of the domain covariance matrix
+ * relating to concepts present in the student matrix to obtain partial correlations.
+ * Weights are then equal to the partial correlations.
+ * NOTE: this is NOT adaptive to edges in the student map, but we can't do that without
+ * getting into directional territory?
  *
  * @param reference Domain reference
  * @param student Student concept matrix
  * @param naieve Boolean naieve mode?
  */
-export function EdgeSuggestion(reference: Domain, student: Matrix, matches: IConceptMatch[], options?: IEdgeOptions): ICriteriumResult<IMissingEdgeHint>[];
+export function EdgeSuggestion(reference: Domain, student: Matrix, matches: IConceptMatch[], options?: IEdgeOptions): ICriterionResult<IMissingEdgeHint>[];
 export function getPartialsInternal(reference: Domain, student: Matrix, defaultGetter: (index: [number, number]) => number): Matrix;
 export function getPartials(reference: Domain, student: Matrix): Matrix;
-export function getRemainders(reference: Domain, student: Matrix): Matrix;
 export interface IEdgeOptions {
-    weightType: 'Partials' | 'Remainder';
 }
 export function getEdgeWeights(reference: Domain, student: Matrix, options?: IEdgeOptions): Matrix;
 export interface IDomainJSON {
@@ -240,11 +250,14 @@ export class Domain {
     constructor(name: string, concepts: Concept[], domain: Matrix);
     fromJSON(json: IDomainJSON): Domain;
     getClosestConcept(node: Node, threshold?: number): IConceptMatch | null;
-    createStudentMatrix(cm: IConceptMap, directed?: boolean): {
+    scoreStudentMatrix(cm: IConceptMap, directed?: boolean): number;
+    createStudentMatrix(cm: IConceptMap, directed?: boolean, debug?: boolean): {
         matrix: Matrix;
         matches: IConceptMatch[];
-        typos: ICriteriumResult<IHint>[];
-        unknown: ICriteriumResult<IHint>[];
+        typos: ICriterionResult<IHint>[];
+        unknown: ICriterionResult<IHint>[];
+        alien: string[];
+        known: string[];
     };
 }
 export interface IConceptMap {
@@ -255,5 +268,15 @@ export interface IAnalyzerOptions {
     edges?: IEdgeOptions;
     nodes?: INodeOptions;
     translate?: TranslateFn;
+    language?: string;
 }
-export function Analyze(domain: Domain, student: IConceptMap, options?: IAnalyzerOptions): CriteriumResults;
+export function Analyze(domain: Domain, student: IConceptMap, options?: IAnalyzerOptions): CriterionResults;
+export const concepts: {
+    [word: string]: {
+        count: number;
+        known: boolean;
+    };
+};
+export function Score(domain: Domain, studentMap: IConceptMap): number;
+
+//# sourceMappingURL=analyzer.d.ts.map

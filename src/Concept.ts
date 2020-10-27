@@ -28,7 +28,11 @@ export class Concept {
             // add name to synonyms and filter out duplicates
             this.name = input.name;
             this.synonyms = [
-                ...new Set(input.synonyms ? [name, ...input.synonyms] : [name]),
+                ...new Set(
+                    input.synonyms
+                        ? [input.name, ...input.synonyms]
+                        : [input.name]
+                ),
             ];
         }
     }

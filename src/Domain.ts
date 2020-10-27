@@ -38,7 +38,7 @@ export class Domain {
     static fromJSON(json: IDomainJSON): Domain {
         let concepts = json.concepts.map(c => new Concept(c));
         let domain = matrix(json.domain.data, 'dense');
-        return new Domain(name, concepts, domain);
+        return new Domain(json.name, concepts, domain);
     }
 
     getClosestConcept(
@@ -105,16 +105,21 @@ export class Domain {
 
     createStudentMatrix(
         cm: IConceptMap,
-        directed: boolean = false
+        directed: boolean = false,
+        debug: boolean = false
     ): {
         matrix: Matrix;
         matches: IConceptMatch[];
         typos: ICriterionResult<IHint>[];
         unknown: ICriterionResult<IHint>[];
+        alien: string[];
+        known: string[];
     } {
         let student = matrix('dense');
         let typos: ICriterionResult<IHint>[] = [];
         let unknown: ICriterionResult<IHint>[] = [];
+        let alien: string[] = [];
+        let known: string[] = [];
         student.resize([this.concepts.length, this.concepts.length], 0);
 
         // map concepts
@@ -126,13 +131,20 @@ export class Domain {
                 student.set([closest.index, closest.index], 1);
                 if (closest.match.similarity < 1) {
                     typos.push(createTypoSuggestion(closest));
+                    known.push(closest.match.name);
+                } else {
+                    known.push(node.label!);
                 }
             } else {
                 let suggestion = createUnknownSuggestion(node, this);
                 if (suggestion) {
                     unknown.push(suggestion);
+                    if (node.label)
+                        known.push(suggestion.hints![0].subject.match.name);
                 } else {
-                    console.warn(`Could not match concept '${node.label}'`);
+                    if (node.label) alien.push(node.label);
+                    if (debug)
+                        console.warn(`Could not match concept '${node.label}'`);
                 }
             }
         }
@@ -146,11 +158,12 @@ export class Domain {
                     student.set([to.index, from.index], 1);
                 }
             } else {
-                console.warn(
-                    `Could not match edge '${edge.from} (${
-                        from ? from.concept.name : '??'
-                    }) -> ${edge.to} (${to ? to.concept.name : '??'})'`
-                );
+                if (debug)
+                    console.warn(
+                        `Could not match edge '${edge.from} (${
+                            from ? from.concept.name : '??'
+                        }) -> ${edge.to} (${to ? to.concept.name : '??'})'`
+                    );
             }
         }
 
@@ -159,6 +172,8 @@ export class Domain {
             matches,
             typos,
             unknown,
+            alien,
+            known,
         };
     }
 }

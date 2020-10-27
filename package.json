@@ -2,20 +2,27 @@
     "name": "concept-map-analyzer-matrix",
     "version": "2.0.0",
     "source": "src/index.ts",
-    "main": "lib/analyzer.js",
+    "main": "lib/index.js",
     "types": "dist/analyzer.d.ts",
+    "global": "dist/analyzer.js",
     "scripts": {
         "test": "jest",
+        "watch": "concurrently -n tsc,build -c blue,green \"yarn dev:watch\" \"yarn graasp:watch\"",
+        "dev:watch": "tsc -w",
         "graasp:build": "start build.bat",
         "graasp:watch": "sane \"npm run graasp:build\" --wait=10 ./src"
     },
     "targets": {
-        "main": {
+        "global": {
             "isLibrary": false,
             "context": "browser",
             "includeNodeModules": true,
-            "outputFormat": "global"
+            "outputFormat": "global",
+            "scopeHoist": true
         }
+    },
+    "engines": {
+        "browsers": "> 0.2%"
     },
     "license": "MIT",
     "devDependencies": {
